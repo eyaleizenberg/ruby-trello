@@ -1,8 +1,21 @@
 module Trello
   # Action represents some event that occurred. For instance, when a card is created.
+  #
+  # @!attribute [r] id
+  #   @return [String]
+  # @!attribute [r] type
+  #   @return [String]
+  # @!attribute [r] data
+  #   @return [Hash]
+  # @!attribute [r] date
+  #   @return [Datetime]
+  # @!attribute [r] member_creator_id
+  #   @return [String]
+  # @!attribute [r] member_participant
+  #   @return [Object]
   class Action < BasicData
     register_attributes :id, :type, :data, :date, :member_creator_id, :member_participant,
-      :readonly => [ :id, :type, :data, :date, :member_creator_id, :member_participant ]
+      readonly: [ :id, :type, :data, :date, :member_creator_id, :member_participant ]
     validates_presence_of :id, :type, :date, :member_creator_id
 
     class << self
@@ -13,9 +26,8 @@ module Trello
 
       def search(query, opts={})
         response = client.get("/search/", { query: query }.merge(opts))
-        formatted_response = JSON.parse(response).except("options").inject({}) do |res, key|
-          res.merge!({ key.first => key.last.jsoned_into("Trello::#{key.first.singularize.capitalize}".constantize) })
-          res
+        JSON.parse(response).except("options").inject({}) do |res, key|
+          res.merge({ key.first => key.last.jsoned_into("Trello::#{key.first.singularize.capitalize}".constantize) })
         end
       end
     end
@@ -50,6 +62,6 @@ module Trello
     end
 
     # Returns the member who created the action.
-    one :member_creator, :via => Member, :path => :members, :using => :member_creator_id
+    one :member_creator, via: Member, path: :members, using: :member_creator_id
   end
 end

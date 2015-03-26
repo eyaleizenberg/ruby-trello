@@ -43,19 +43,20 @@ module Trello
         card.should_not be_valid
       end
 
-      it 'creates a new record and saves it on Trello', :refactor => true do
+      it 'creates a new record and saves it on Trello', refactor: true do
         payload = {
-          :name    => 'Test Card',
-          :desc    => nil,
+          name: 'Test Card',
+          desc: nil,
         }
 
-        result = JSON.generate(cards_details.first.merge(payload.merge(:idList => lists_details.first['id'])))
+        result = JSON.generate(cards_details.first.merge(payload.merge(idList: lists_details.first['id'])))
 
-        expected_payload = {name: "Test Card", desc: nil, idList: "abcdef123456789123456789", idMembers: nil, labels: nil }
+        expected_payload = {name: "Test Card", desc: nil, idList: "abcdef123456789123456789",
+                            idMembers: nil, labels: nil, pos: nil }
 
         client.should_receive(:post).with("/cards", expected_payload).and_return result
 
-        card = Card.create(cards_details.first.merge(payload.merge(:list_id => lists_details.first['id'])))
+        card = Card.create(cards_details.first.merge(payload.merge(list_id: lists_details.first['id'])))
 
         card.class.should be Card
       end
@@ -66,7 +67,7 @@ module Trello
         expected_new_name = "xxx"
 
         payload = {
-          :name      => expected_new_name,
+          name: expected_new_name,
         }
 
         client.should_receive(:put).once.with("/cards/abcdef123456789123456789", payload)
@@ -119,17 +120,21 @@ module Trello
       it "gets its cover image id" do
         card.cover_image_id.should_not be_nil
       end
+
+      it "gets its pos" do
+        card.pos.should_not be_nil
+      end
     end
 
     context "actions" do
       it "asks for all actions by default" do
-        client.stub(:get).with("/cards/abcdef123456789123456789/actions", { :filter => :all }).and_return actions_payload
+        client.stub(:get).with("/cards/abcdef123456789123456789/actions", { filter: :all }).and_return actions_payload
         card.actions.count.should be > 0
       end
 
       it "allows overriding the filter" do
-        client.stub(:get).with("/cards/abcdef123456789123456789/actions", { :filter => :updateCard }).and_return actions_payload
-        card.actions(:filter => :updateCard).count.should be > 0
+        client.stub(:get).with("/cards/abcdef123456789123456789/actions", { filter: :updateCard }).and_return actions_payload
+        card.actions(filter: :updateCard).count.should be > 0
       end
     end
 
@@ -149,7 +154,7 @@ module Trello
 
     context "checklists" do
       before(:each) do
-        client.stub(:get).with("/cards/abcdef123456789123456789/checklists", { :filter => :all }).and_return checklists_payload
+        client.stub(:get).with("/cards/abcdef123456789123456789/checklists", { filter: :all }).and_return checklists_payload
       end
 
       it "has a list of checklists" do
@@ -169,15 +174,15 @@ module Trello
       end
 
       it 'can be moved to another list' do
-        other_list = double(:id => '987654321987654321fedcba')
-        payload = {:value => other_list.id}
+        other_list = double(id: '987654321987654321fedcba')
+        payload = {value: other_list.id}
         client.should_receive(:put).with("/cards/abcdef123456789123456789/idList", payload)
         card.move_to_list(other_list)
       end
 
       it 'should not be moved if new list is identical to old list' do
-        other_list = double(:id => 'abcdef123456789123456789')
-        payload = { :value => other_list.id }
+        other_list = double(id: 'abcdef123456789123456789')
+        payload = { value: other_list.id }
         client.should_not_receive(:put)
         card.move_to_list(other_list)
       end
@@ -189,22 +194,22 @@ module Trello
       end
 
       it 'can be moved to another board' do
-        other_board = double(:id => '987654321987654321fedcba')
-        payload = {:value => other_board.id}
+        other_board = double(id: '987654321987654321fedcba')
+        payload = {value: other_board.id}
         client.should_receive(:put).with("/cards/abcdef123456789123456789/idBoard", payload)
         card.move_to_board(other_board)
       end
 
       it 'can be moved to a list on another board' do
-        other_board = double(:id => '987654321987654321fedcba')
-        other_list = double(:id => '987654321987654321aalist')
-        payload = {:value => other_board.id, :idList => other_list.id}
+        other_board = double(id: '987654321987654321fedcba')
+        other_list = double(id: '987654321987654321aalist')
+        payload = {value: other_board.id, idList: other_list.id}
         client.should_receive(:put).with("/cards/abcdef123456789123456789/idBoard", payload)
         card.move_to_board(other_board, other_list)
       end
 
-      it 'should not be moved if new board is identical with old board', :focus => true do
-        other_board = double(:id => 'abcdef123456789123456789')
+      it 'should not be moved if new board is identical with old board', focus: true do
+        other_board = double(id: 'abcdef123456789123456789')
         client.should_not_receive(:put)
         card.move_to_board(other_board)
       end
@@ -220,16 +225,16 @@ module Trello
       end
 
       it "allows a member to be added to a card" do
-        new_member = double(:id => '4ee7df3ce582acdec80000b2')
+        new_member = double(id: '4ee7df3ce582acdec80000b2')
         payload = {
-          :value => new_member.id
+          value: new_member.id
         }
         client.should_receive(:post).with("/cards/abcdef123456789123456789/members", payload)
         card.add_member(new_member)
       end
 
       it "allows a member to be removed from a card" do
-        existing_member = double(:id => '4ee7df3ce582acdec80000b2')
+        existing_member = double(id: '4ee7df3ce582acdec80000b2')
         client.should_receive(:delete).with("/cards/abcdef123456789123456789/members/#{existing_member.id}")
         card.remove_member(existing_member)
       end
@@ -238,7 +243,7 @@ module Trello
     context "comments" do
       it "posts a comment" do
         client.should_receive(:post).
-          with("/cards/abcdef123456789123456789/actions/comments", { :text => 'testing' }).
+          with("/cards/abcdef123456789123456789/actions/comments", { text: 'testing' }).
           and_return JSON.generate(boards_details.first)
 
         card.add_comment "testing"
@@ -250,41 +255,68 @@ module Trello
         client.stub(:get).with("/cards/abcdef123456789123456789/labels").
           and_return label_payload
         labels = card.labels
-        labels.size.should == 2
+        expect(labels.size).to  eq(4)
 
-        labels[0].color.should == 'yellow'
-        labels[0].name.should == 'iOS'
+        expect(labels[0].color).to  eq('yellow')
+        expect(labels[0].id).to  eq('abcdef123456789123456789')
+        expect(labels[0].board_id).to  eq('abcdef123456789123456789')
+        expect(labels[0].name).to  eq('iOS')
+        expect(labels[0].uses).to  eq(3)
 
-        labels[1].color.should == 'purple'
-        labels[1].name.should == 'Issue or bug'
+        expect(labels[1].color).to  eq('purple')
+        expect(labels[1].id).to  eq('abcdef123456789123456789')
+        expect(labels[1].board_id).to  eq('abcdef123456789123456789')
+        expect(labels[1].name).to  eq('Issue or bug')
+        expect(labels[1].uses).to  eq(1)
       end
 
       it "can add a label" do
-        client.stub(:post).with("/cards/abcdef123456789123456789/labels", { :value => 'green' }).
+        client.stub(:post).with("/cards/abcdef123456789123456789/labels", { value: 'green' }).
           and_return "not important"
         card.add_label('green')
-        card.errors.should be_empty
+        expect(card.errors).to be_empty
       end
 
       it "can remove a label" do
         client.stub(:delete).with("/cards/abcdef123456789123456789/labels/green").
           and_return "not important"
         card.remove_label('green')
-        card.errors.should be_empty
+        expect(card.errors).to be_empty
+      end
+
+      it "can remove a label instance" do
+        client.should_receive(:delete).once.with("/cards/abcdef123456789123456789/idLabels/abcdef123456789123456789")
+        label = Label.new(label_details.first)
+        card.remove_label(label)
+      end
+
+      it "can add a label of any valid color" do
+        %w(green yellow orange red purple blue sky lime pink black).each do |color|
+          client.stub(:post).with("/cards/abcdef123456789123456789/labels", { :value => color }).
+            and_return "not important"
+          card.add_label(color)
+          expect(card.errors).to be_empty
+        end
+      end
+
+      it "can add a label instance" do
+        client.should_receive(:post).once.with("/cards/abcdef123456789123456789/idLabels", {:value => "abcdef123456789123456789"})
+        label = Label.new(label_details.first)
+        card.add_label label
       end
 
       it "throws an error when trying to add a label with an unknown colour" do
-        client.stub(:post).with("/cards/abcdef123456789123456789/labels", { :value => 'green' }).
+        client.stub(:post).with("/cards/abcdef123456789123456789/labels", { value: 'green' }).
           and_return "not important"
         card.add_label('mauve')
-        card.errors.full_messages.to_sentence.should == "Label colour 'mauve' does not exist"
+        expect(card.errors.full_messages.to_sentence).to eq("Label colour 'mauve' does not exist")
       end
 
       it "throws an error when trying to remove a label with an unknown colour" do
         client.stub(:delete).with("/cards/abcdef123456789123456789/labels/mauve").
           and_return "not important"
         card.remove_label('mauve')
-        card.errors.full_messages.to_sentence.should == "Label colour 'mauve' does not exist"
+        expect(card.errors.full_messages.to_sentence).to eq("Label colour 'mauve' does not exist")
       end
     end
 
@@ -293,7 +325,7 @@ module Trello
         f = File.new('spec/list_spec.rb', 'r')
         client.stub(:get).with("/cards/abcdef123456789123456789/attachments").and_return attachments_payload
         client.stub(:post).with("/cards/abcdef123456789123456789/attachments",
-              { :file => f, :name => ''  }).
+              { file: f, name: ''  }).
               and_return "not important"
 
         card.add_attachment(f)
@@ -344,7 +376,7 @@ module Trello
     describe "#close!" do
       it "updates the close attribute to true and saves the list" do
         payload = {
-          :closed    => true,
+          closed: true,
         }
 
         client.should_receive(:put).once.with("/cards/abcdef123456789123456789", payload)
